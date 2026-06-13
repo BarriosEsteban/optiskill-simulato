@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useGame } from "@/hooks/use-game"
 import { NIVELES, LOGROS } from "@/lib/game-data"
 import { StatHeader } from "@/components/stat-header"
@@ -7,10 +8,12 @@ import { LensCanvas } from "@/components/lens-canvas"
 import { NameModal } from "@/components/name-modal"
 import { AscensoModal } from "@/components/ascenso-modal"
 import { AchievementToasts } from "@/components/achievement-toasts"
+import { RankingModal } from "@/components/ranking-modal"
 
 export function Workshop() {
   const game = useGame()
   const nivelActual = NIVELES[game.nivel - 1]
+  const [showRanking, setShowRanking] = useState(false)
 
   const logColor =
     game.log.type === "success"
@@ -23,7 +26,24 @@ export function Workshop() {
     <main className="flex min-h-screen flex-col items-center">
       <StatHeader nombre={game.nombre} nivel={game.nivel} puntos={game.puntos} racha={game.racha} />
 
-      <section className="mt-10 w-[90%] max-w-[650px] pb-16 text-center">
+      <div className="mt-4 flex w-[90%] max-w-[650px] justify-end gap-2">
+        <button
+          onClick={() => setShowRanking(true)}
+          className="rounded-lg border border-[var(--primary)] bg-[rgba(0,212,255,0.05)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--primary)] transition hover:bg-[rgba(0,212,255,0.15)]"
+        >
+          Ranking
+        </button>
+        <button
+          onClick={game.toggleSound}
+          aria-pressed={game.soundOn}
+          aria-label={game.soundOn ? "Desactivar sonido" : "Activar sonido"}
+          className="rounded-lg border border-[var(--primary)] bg-[rgba(0,212,255,0.05)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--primary)] transition hover:bg-[rgba(0,212,255,0.15)]"
+        >
+          {game.soundOn ? "Sonido: ON" : "Sonido: OFF"}
+        </button>
+      </div>
+
+      <section className="mt-6 w-[90%] max-w-[650px] pb-16 text-center">
         <h1 className="text-balance text-3xl font-bold text-[var(--primary)] [text-shadow:0_0_15px_rgba(0,212,255,0.3)]">
           {nivelActual.nombre}
         </h1>
@@ -108,6 +128,13 @@ export function Workshop() {
         />
       )}
       <AchievementToasts toasts={game.toasts} />
+      {showRanking && (
+        <RankingModal
+          ranking={game.ranking}
+          nombreActual={game.nombre}
+          onClose={() => setShowRanking(false)}
+        />
+      )}
     </main>
   )
 }

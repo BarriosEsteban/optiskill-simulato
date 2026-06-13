@@ -67,5 +67,13 @@ export interface SavedState {
   talladosCompletados: number
 }
 
+export interface RankingEntry {
+  nombre: string
+  puntos: number
+  nivel: number
+  fecha: number
+}
+
 export const STORAGE_KEY = "optiskill-state"
 export const USERNAME_KEY = "optiskill-username"
+export const RANKING_KEY = "optiskill-ranking"

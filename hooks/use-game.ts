@@ -6,8 +6,11 @@ import {
   LOGROS,
   STORAGE_KEY,
   USERNAME_KEY,
+  RANKING_KEY,
   type SavedState,
+  type RankingEntry,
 } from "@/lib/game-data"
+import { startGrind, stopGrind, playTone } from "@/lib/sound"
 
 export interface ToastLogro {
   key: number
@@ -31,6 +34,11 @@ export function useGame() {
   const [toasts, setToasts] = useState<ToastLogro[]>([])
   const [ascenso, setAscenso] = useState<{ nivel: number; nombre: string; descripcion: string } | null>(null)
   const [loaded, setLoaded] = useState(false)
+  const [ranking, setRanking] = useState<RankingEntry[]>([])
+  const [soundOn, setSoundOn] = useState(true)
+
+  const soundRef = useRef(true)
+  soundRef.current = soundOn
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const progresoRef = useRef(0)
@@ -62,6 +70,19 @@ export function useGame() {
         // ignore corrupt data
       }
     }
+
+    const savedRanking = localStorage.getItem(RANKING_KEY)
+    if (savedRanking) {
+      try {
+        setRanking(JSON.parse(savedRanking) as RankingEntry[])
+      } catch {
+        // ignore corrupt data
+      }
+    }
+
+    const savedSound = localStorage.getItem("optiskill-sound")
+    if (savedSound === "off") setSoundOn(false)
+
     setLoaded(true)
   }, [])
 
@@ -108,6 +129,7 @@ export function useGame() {
   const startTallado = useCallback(() => {
     if (intervalRef.current) return
     setIsTallando(true)
+    if (soundRef.current) startGrind()
     setLog({ text: "Tallando... Mantén la presión constante.", type: "info" })
 
     const nivelConfig = NIVELES[stateRef.current.nivel - 1]
@@ -119,6 +141,7 @@ export function useGame() {
 
   const stopTallado = useCallback(() => {
     setIsTallando(false)
+    stopGrind()
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
       intervalRef.current = null
@@ -142,6 +165,7 @@ export function useGame() {
         text: `Lente incompleta (${precision}%). Necesitas mínimo 90%.`,
         type: "error",
       })
+      if (soundRef.current) playTone("error")
       setRacha(0)
       persist({ racha: 0 })
       return
@@ -164,6 +188,7 @@ export function useGame() {
     if (precision === 100) mensaje += " ¡PERFECCIÓN!"
     if (nuevaRacha > 1) mensaje += ` Racha x${nuevaRacha}`
     setLog({ text: mensaje, type: "success" })
+    if (soundRef.current) playTone("success")
 
     // Logros (usar valores nuevos)
     if (nuevosTallados === 1) desbloquearLogro("primera-lente")
@@ -193,8 +218,24 @@ export function useGame() {
       nivel: nivelFinal,
     })
 
+    // Actualizar ranking (mejor puntaje por tallador)
+    setRanking((prev) => {
+      const sinActual = prev.filter((e) => e.nombre !== nombre)
+      const entrada: RankingEntry = {
+        nombre,
+        puntos: nuevosPuntos,
+        nivel: nivelFinal,
+        fecha: Date.now(),
+      }
+      const next = [...sinActual, entrada]
+        .sort((a, b) => b.puntos - a.puntos)
+        .slice(0, 10)
+      localStorage.setItem(RANKING_KEY, JSON.stringify(next))
+      return next
+    })
+
     setTimeout(() => resetLente(), 2000)
-  }, [desbloquearLogro, persist, resetLente])
+  }, [desbloquearLogro, persist, resetLente, nombre])
 
   // Cleanup interval on unmount
   useEffect(() => {
@@ -204,6 +245,15 @@ export function useGame() {
   }, [])
 
   const cerrarAscenso = useCallback(() => setAscenso(null), [])
+
+  const toggleSound = useCallback(() => {
+    setSoundOn((prev) => {
+      const next = !prev
+      localStorage.setItem("optiskill-sound", next ? "on" : "off")
+      if (!next) stopGrind()
+      return next
+    })
+  }, [])
 
   return {
     nombre,
@@ -218,11 +268,14 @@ export function useGame() {
     toasts,
     ascenso,
     loaded,
+    ranking,
+    soundOn,
     guardarNombre,
     startTallado,
     stopTallado,
     resetLente,
     completarPrueba,
     cerrarAscenso,
+    toggleSound,
   }
 }
