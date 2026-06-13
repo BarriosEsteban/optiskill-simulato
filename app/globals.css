@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0f0f1e;
+  --foreground: #e0e0e0;
+  --primary: #00d4ff;
+  --accent: #ff007b;
+  --success: #00ff41;
+  --warning: #ffb700;
+  --card: #2d2d44;
+  --radius: 0.5rem;
+}
+
+html {
+  background-color: var(--background);
+}
+
+body {
+  background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+  color: var(--foreground);
+  min-height: 100vh;
+}
+
+/* Particle float animation */
+@keyframes float {
+  to {
+    transform: translate(var(--tx), var(--ty)) scale(0);
+    opacity: 0;
+  }
+}
+
+.particle {
+  position: absolute;
+  background: rgba(255, 0, 123, 0.8);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: float 0.5s ease-out forwards;
+}
+
+/* Achievement slide-in */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.achievement-card {
+  animation: slideIn 0.5s ease-out;
+}
